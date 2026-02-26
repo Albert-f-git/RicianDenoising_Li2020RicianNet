@@ -70,7 +70,7 @@ def main():
     print(f"\n{'噪声水平 (Rician)':<15} | {'PSNR (dB)':>15} | {'PSNR_after (dB)':>15} | {'SSIM':>15} | {'SSIM_after':>15}")
     print("-" * 80)
     
-    noise_levels = [5, 8, 15, 20, 25, 30]
+    noise_levels = [5, 8, 10, 15, 20, 25]
     
     # 使用 torch.no_grad() 彻底关闭梯度计算，节省显存并加速推理
     with torch.no_grad():
