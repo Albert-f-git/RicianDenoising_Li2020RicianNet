@@ -48,7 +48,7 @@ def visualize_results(clean, noisy, denoised, residual, level):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_path = "checkpoints/rician_net_best.pth"
+    model_path = "checkpoints\\rician_net_rf0_fine_tuned.pth"
     test_img_path = "data/test/brain_test_01.png"
     
     if not os.path.exists(model_path):

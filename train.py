@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter  # 引入 TensorBoard 写入器
+from torch.utils.tensorboard import SummaryWriter
 
 from models.RicianNet import RicianNet
 from utils.data_loader import get_dataloader, add_rician_noise_gpu
@@ -14,25 +14,33 @@ def main():
     
     os.makedirs("checkpoints", exist_ok=True)
     
-    # 初始化 TensorBoard 写入器，日志将保存在 runs/rician_experiment 目录下
-    writer = SummaryWriter(log_dir="runs/rician_experiment")
+    # --- 修改 1: 建议更改日志目录名，以便在 TensorBoard 中对比微调前后的曲线 ---
+    writer = SummaryWriter(log_dir="runs/rician_finetune_rf0")
     
+    # --- 修改 2: 确保你的 data/train/ 目录下现在放的是 RF0 的数据 ---
     train_loader = get_dataloader("data/train/", batch_size=64, shuffle=True)
     model = RicianNet().to(device)
+
+    # --- 修改 3: 加载 RF20 的权重进行“热启动” ---
+    weights_path = "checkpoints/rician_net_best.pth"
+    if os.path.exists(weights_path):
+        # 使用 weights_only=True 是 PyTorch 的安全最佳实践
+        model.load_state_dict(torch.load(weights_path, map_location=device, weights_only=True))
+        print(f"✅ 成功加载预训练权重: {weights_path}，开始针对 RF0 进行微调补救...")
+    else:
+        print("⚠️ 未找到预训练权重，将从零开始训练（请检查路径）")
     
     criterion = nn.MSELoss()
-    # SGD 优化器的学习率和动量参数设置
-    # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
 
-    # Adam 优化器的学习率和权重衰减参数设置
-    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
-
-    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=116840, gamma=0.1)
+    # --- 修改 4: 降低学习率 (Fine-tuning 常用 1e-5 或 5e-5) ---
+    # 较低的学习率能防止 RF0 的新分布把模型原本学到的去噪能力“冲跨”
+    optimizer = optim.Adam(model.parameters(), lr=0.00005, weight_decay=1e-4)
     
-    EPOCHS = 50
+    # --- 修改 5: 微调不需要 50 轮，通常 10-20 轮即可见效 ---
+    EPOCHS = 20 
     best_loss = float('inf')
     
-    print("开始训练...")
+    print("开始微调训练...")
     for epoch in range(1, EPOCHS + 1):
         model.train()
         epoch_loss = 0.0
@@ -60,16 +68,15 @@ def main():
         avg_loss = epoch_loss / len(train_loader)
         print(f"--> Epoch {epoch} 总结 | 平均 Loss (MSE): {avg_loss:.6f}")
         
-        # 将本轮的平均 Loss 和当前学习率记录到 TensorBoard 中
         writer.add_scalar('Training/Average_Loss', avg_loss, epoch)
         writer.add_scalar('Training/Learning_Rate', current_lr, epoch)
         
         if avg_loss < best_loss:
             best_loss = avg_loss
-            torch.save(model.state_dict(), "checkpoints/rician_net_best.pth")
-            print("  [*] 捕捉到更小的 Loss，已保存最新模型！")
+            # 建议微调阶段保存为一个新名字，防止覆盖掉之前的“保底”模型
+            torch.save(model.state_dict(), "checkpoints/rician_net_rf0_fine_tuned.pth")
+            print("  [*] 捕捉到更小的 Loss，已保存 RF0 微调模型！")
             
-    # 训练结束后关闭写入器
     writer.close()
 
 if __name__ == "__main__":

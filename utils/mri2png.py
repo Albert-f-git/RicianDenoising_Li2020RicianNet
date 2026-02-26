@@ -50,7 +50,9 @@ def convert_mri_to_png(filepath, output_dir, file_prefix="mri"):
         
         # 避坑点 3：BrainWeb 的 MINC 数据切出来默认可能是顺时针转了 90 度的
         # 加上这行旋转代码，出来的 PNG 图片才是正向的大脑形状
-        slice_uint8 = np.rot90(slice_uint8)
+        # slice_uint8 = np.rot180(slice_uint8)
+        # 如果是上下颠倒（Vertical Flip），使用 flipud
+        slice_uint8 = np.flipud(slice_uint8)
         
         # 3. 保存为 PNG 图像
         save_path = os.path.join(output_dir, f"{file_prefix}_slice_{saved_count:03d}.png")
