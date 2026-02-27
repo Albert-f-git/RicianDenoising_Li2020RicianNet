@@ -18,7 +18,7 @@ def add_rician_noise_numpy(image, noise_level_pct):
     noisy_image = np.sqrt((image + n1)**2 + n2**2)
     return noisy_image
 
-def visualize_results(clean, noisy, denoised, residual, level):
+def visualize_results(clean, noisy, denoised, residual, level, testnm):
     """
     绘制并排的 1x4 结果对比图
     """
@@ -42,14 +42,15 @@ def visualize_results(clean, noisy, denoised, residual, level):
     fig.colorbar(im, ax=axes[3], fraction=0.046, pad=0.04)
     
     plt.tight_layout()
-    plt.savefig(f"result_level_{level}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"brain{testnm}_result_level_{level}.png", dpi=300, bbox_inches='tight')
     # plt.show() # 如果你在没有图形界面的服务器上运行，请注释掉这行
     plt.close()
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_path = "checkpoints\\rician_net_rf0_fine_tuned.pth"
-    test_img_path = "data/test/brain_test_01.png"
+    model_path = "checkpoints\\riciannet_rf0_cleaned.pth"
+    testnm = '02'  # 你要测试的图像编号，例如 '01'、'02' 等
+    test_img_path = f"data/test/brain_test_{testnm}.png"
     
     if not os.path.exists(model_path):
         print(f"找不到模型文件: {model_path}，请先运行 train.py")
@@ -100,7 +101,7 @@ def main():
             print(f"{level:>15}%    | {psnr:>15.4f} | {psnr_after:>15.4f} | {ssim:>15.4f} | {ssim_after:>15.4f}")
             
             # 绘制并保存可视化结果
-            visualize_results(clean_img, noisy_img, denoised_img, residual, level)
+            visualize_results(clean_img, noisy_img, denoised_img, residual, level, testnm)
             
     print("\n评估完成！可视化结果图已保存在当前目录下。")
 

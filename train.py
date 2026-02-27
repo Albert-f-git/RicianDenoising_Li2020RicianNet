@@ -15,18 +15,18 @@ def main():
     os.makedirs("checkpoints", exist_ok=True)
     
     # --- 修改 1: 建议更改日志目录名，以便在 TensorBoard 中对比微调前后的曲线 ---
-    writer = SummaryWriter(log_dir="runs/rician_finetune_rf0")
+    writer = SummaryWriter(log_dir="runs/rician_sorted_data")
     
     # --- 修改 2: 确保你的 data/train/ 目录下现在放的是 RF0 的数据 ---
     train_loader = get_dataloader("data/train/", batch_size=64, shuffle=True)
     model = RicianNet().to(device)
 
     # --- 修改 3: 加载 RF20 的权重进行“热启动” ---
-    weights_path = "checkpoints/rician_net_best.pth"
+    weights_path = "checkpoints\\riciannet_rf0_uncleaned.pth"
     if os.path.exists(weights_path):
         # 使用 weights_only=True 是 PyTorch 的安全最佳实践
         model.load_state_dict(torch.load(weights_path, map_location=device, weights_only=True))
-        print(f"✅ 成功加载预训练权重: {weights_path}，开始针对 RF0 进行微调补救...")
+        print(f"✅ 成功加载预训练权重: {weights_path}，开始针对 sort 进行微调...")
     else:
         print("⚠️ 未找到预训练权重，将从零开始训练（请检查路径）")
     
@@ -74,7 +74,7 @@ def main():
         if avg_loss < best_loss:
             best_loss = avg_loss
             # 建议微调阶段保存为一个新名字，防止覆盖掉之前的“保底”模型
-            torch.save(model.state_dict(), "checkpoints/rician_net_rf0_fine_tuned.pth")
+            torch.save(model.state_dict(), "checkpoints/riciannet_rf0_cleaned.pth")
             print("  [*] 捕捉到更小的 Loss，已保存 RF0 微调模型！")
             
     writer.close()
